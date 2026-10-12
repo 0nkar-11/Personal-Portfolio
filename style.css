@@ -121,10 +121,13 @@ button, input, textarea {
 .section {
   padding: 6.5rem 0;
   position: relative;
+  z-index: 2;
 }
 
 .section-alt {
-  background-color: var(--bg-secondary);
+  background-color: rgba(13, 19, 31, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .section-header {
@@ -375,6 +378,19 @@ button, input, textarea {
   background: radial-gradient(circle at 10% 20%, rgba(0, 210, 255, 0.16) 0%, transparent 45%),
               radial-gradient(circle at 90% 80%, rgba(255, 87, 34, 0.16) 0%, transparent 45%);
   overflow: hidden;
+}
+
+/* Animated Flowing Cosmic Particle Silk Wave Canvas (Cyan & Fire Orange - Whole Website) */
+.wave-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.88;
+  will-change: transform;
 }
 
 /* Animated Cyber Grid Overlay */

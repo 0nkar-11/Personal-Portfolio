@@ -18,6 +18,8 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- Global Animated Cosmic Particle Silk Ribbon Canvas (Full-Website Background) -->
+  <canvas id="wave-canvas" class="wave-canvas" aria-hidden="true"></canvas>
 
   <!-- Navigation Bar -->
   <header class="navbar-header">
@@ -512,78 +514,322 @@
   <div class="cursor-dot" id="cursor-dot"></div>
   <div class="cursor-ring" id="cursor-ring"></div>
 
-  <!-- Smooth Cursor Tracking & Interactive Hover Script -->
+  <!-- Animated Fluid Particle Silk Wave & Interactive Cursor Script -->
   <script>
     (function () {
+      /* ========================================================================
+         1. Global Fluid Particle Silk Waves Simulation (Whole Website)
+         Matches user's reference: undulating cosmic stardust ribbons & fire/cyan particles
+         ======================================================================== */
+      const canvas = document.getElementById('wave-canvas');
+
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        let width = 0, height = 0;
+        let dpr = Math.min(window.devicePixelRatio || 1, 2);
+        let animationFrameId = null;
+        let time = 0;
+
+        let mouseX = -1000, mouseY = -1000;
+        let targetMouseX = -1000, targetMouseY = -1000;
+
+        // Global viewport mouse tracking
+        window.addEventListener('mousemove', (e) => {
+          targetMouseX = e.clientX;
+          targetMouseY = e.clientY;
+        });
+
+        document.addEventListener('mouseleave', () => {
+          targetMouseX = -1000;
+          targetMouseY = -1000;
+        });
+
+        function resizeCanvas() {
+          width = window.innerWidth;
+          height = window.innerHeight;
+
+          canvas.width = width * dpr;
+          canvas.height = height * dpr;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Color palettes sampled from the Fire & Ice wave photo
+        const fireColors = [
+          'rgba(255, 87, 34, ',   // Deep Fire Orange
+          'rgba(255, 112, 67, ',  // Light Flame
+          'rgba(255, 145, 0, ',   // Amber Orange
+          'rgba(255, 171, 0, ',   // Gold Flame
+          'rgba(255, 61, 0, '     // Blazing Red-Orange
+        ];
+
+        const cyanColors = [
+          'rgba(0, 210, 255, ',   // Electric Cyan
+          'rgba(56, 189, 248, ',  // Sky Blue
+          'rgba(6, 182, 212, ',   // Deep Cyan
+          'rgba(103, 232, 249, ', // Bright Cyan
+          'rgba(14, 165, 233, '   // Ocean Ice
+        ];
+
+        const coreColors = [
+          'rgba(255, 235, 180, ', // Golden White Core
+          'rgba(224, 247, 250, '  // Luminous Ice Core
+        ];
+
+        // 1. Silk Ribbon Wave Particles (Primary Ribbon from reference image)
+        const RIBBON_COUNT = Math.min(Math.floor(window.innerWidth * 1.6), 2600);
+        const ribbonParticles = [];
+
+        for (let i = 0; i < RIBBON_COUNT; i++) {
+          const u = Math.random();
+          const rawV = (Math.random() - 0.5) * 2;
+          const v = Math.sign(rawV) * Math.pow(Math.abs(rawV), 1.25);
+
+          let colorBase, alpha;
+          if (v > 0.08) {
+            colorBase = fireColors[Math.floor(Math.random() * fireColors.length)];
+            alpha = 0.28 + Math.random() * 0.65;
+          } else if (v < -0.08) {
+            colorBase = cyanColors[Math.floor(Math.random() * cyanColors.length)];
+            alpha = 0.28 + Math.random() * 0.65;
+          } else {
+            colorBase = coreColors[Math.floor(Math.random() * coreColors.length)];
+            alpha = 0.55 + Math.random() * 0.45;
+          }
+
+          ribbonParticles.push({
+            u: u,
+            v: v,
+            layer: (Math.random() - 0.5) * 2,
+            scatterX: (Math.random() - 0.5) * 26,
+            scatterY: (Math.random() - 0.5) * 26,
+            speed: 0.0003 + Math.random() * 0.0007,
+            size: 0.9 + Math.random() * 1.8,
+            colorBase: colorBase,
+            alpha: alpha,
+            twinkleSpeed: 0.015 + Math.random() * 0.03,
+            twinkleSeed: Math.random() * Math.PI * 2,
+            vx: 0,
+            vy: 0
+          });
+        }
+
+        // 2. Ambient Floating Stardust (Drifting through full viewport)
+        const DUST_COUNT = Math.min(Math.floor(window.innerWidth * 0.35), 350);
+        const ambientDust = [];
+
+        for (let i = 0; i < DUST_COUNT; i++) {
+          const isFire = Math.random() > 0.5;
+          ambientDust.push({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            vx: (Math.random() - 0.5) * 0.4,
+            vy: -0.2 - Math.random() * 0.45,
+            size: 0.8 + Math.random() * 1.6,
+            colorBase: isFire
+              ? fireColors[Math.floor(Math.random() * fireColors.length)]
+              : cyanColors[Math.floor(Math.random() * cyanColors.length)],
+            alpha: 0.15 + Math.random() * 0.45,
+            seed: Math.random() * 100
+          });
+        }
+
+        // Spine curve calculation (Graceful undulating S-curve traversing viewport)
+        function getSpine(u, t) {
+          const startX = width * 1.08;
+          const endX = width * 0.15;
+          const baseX = startX + (endX - startX) * u;
+          const baseY = -height * 0.1 + (height * 1.2) * u;
+
+          // Natural fluid harmonics (twisting undulating wave ribbon)
+          const waveX = Math.sin(u * 3.4 + t * 0.42) * (width * 0.1)
+                      + Math.cos(u * 5.2 - t * 0.3) * (width * 0.05);
+          const waveY = Math.sin(u * 4.0 - t * 0.48) * (height * 0.08)
+                      + Math.cos(u * 2.5 + t * 0.25) * (height * 0.04);
+
+          return { x: baseX + waveX, y: baseY + waveY };
+        }
+
+        function renderParticles() {
+          time += 0.012;
+          ctx.clearRect(0, 0, width, height);
+
+          // Smooth mouse position
+          mouseX += (targetMouseX - mouseX) * 0.1;
+          mouseY += (targetMouseY - mouseY) * 0.1;
+
+          // Glowing luminescence mode
+          ctx.globalCompositeOperation = 'lighter';
+
+          // Render Ambient Stardust Field
+          for (let i = 0; i < ambientDust.length; i++) {
+            const d = ambientDust[i];
+            d.x += d.vx;
+            d.y += d.vy;
+
+            // Subtle gentle drift oscillation
+            d.x += Math.sin(time + d.seed) * 0.25;
+
+            // Wrap edges
+            if (d.y < -10) {
+              d.y = height + 10;
+              d.x = Math.random() * width;
+            }
+            if (d.x < -10) d.x = width + 10;
+            if (d.x > width + 10) d.x = -10;
+
+            // Interactive mouse nudge for ambient particles
+            if (mouseX > -500) {
+              const dx = d.x - mouseX;
+              const dy = d.y - mouseY;
+              const dist = Math.hypot(dx, dy);
+              if (dist < 120 && dist > 0) {
+                const f = (1 - dist / 120) * 3;
+                d.x += (dx / dist) * f;
+                d.y += (dy / dist) * f;
+              }
+            }
+
+            const twinkle = 0.7 + Math.sin(time * 2 + d.seed) * 0.3;
+            ctx.fillStyle = d.colorBase + (d.alpha * twinkle) + ')';
+            ctx.fillRect(d.x, d.y, d.size, d.size);
+          }
+
+          // Render Cosmic Silk Ribbon Particles
+          for (let i = 0; i < ribbonParticles.length; i++) {
+            const p = ribbonParticles[i];
+
+            p.u += p.speed;
+            if (p.u > 1.05) p.u = -0.05;
+
+            const u = p.u;
+
+            const p0 = getSpine(Math.max(0, u - 0.015), time);
+            const p1 = getSpine(Math.min(1, u + 0.015), time);
+
+            const dx = p1.x - p0.x;
+            const dy = p1.y - p0.y;
+            const len = Math.hypot(dx, dy) || 1;
+            const nx = -dy / len;
+            const ny = dx / len;
+
+            // Ribbon width envelope across viewport
+            const widthEnvelope = (Math.sin(u * Math.PI) * 220 + 85) * (width / 1150);
+
+            // 3D undulating twist
+            const twist = Math.sin(u * 5.8 + time * 0.65 + p.layer * 1.2) * 50;
+
+            let px = p0.x + nx * (p.v * widthEnvelope + twist) + p.scatterX;
+            let py = p0.y + ny * (p.v * widthEnvelope + twist) + p.scatterY;
+
+            // Interactive mouse repulsion
+            if (mouseX > -500) {
+              const mdx = px - mouseX;
+              const mdy = py - mouseY;
+              const dist = Math.hypot(mdx, mdy);
+              const maxDist = 175;
+
+              if (dist < maxDist && dist > 0) {
+                const force = (1 - dist / maxDist) * 30;
+                p.vx += (mdx / dist) * force * 0.15;
+                p.vy += (mdy / dist) * force * 0.15;
+              }
+            }
+
+            p.vx *= 0.88;
+            p.vy *= 0.88;
+            px += p.vx;
+            py += p.vy;
+
+            const twinkle = 0.75 + Math.sin(time * 3 + p.twinkleSeed) * 0.25;
+            const finalAlpha = Math.min(1, p.alpha * twinkle);
+
+            ctx.fillStyle = p.colorBase + finalAlpha + ')';
+            ctx.fillRect(px, py, p.size, p.size);
+          }
+
+          ctx.globalCompositeOperation = 'source-over';
+          animationFrameId = requestAnimationFrame(renderParticles);
+        }
+
+        // Start 60fps render loop
+        animationFrameId = requestAnimationFrame(renderParticles);
+      }
+
+      /* ========================================================================
+         2. Smooth Cyber Cursor Tracking & Interactive Hover
+         ======================================================================== */
       const dot = document.getElementById('cursor-dot');
       const ring = document.getElementById('cursor-ring');
 
-      if (!dot || !ring) return;
+      if (dot && ring) {
+        let curMouseX = -100, curMouseY = -100;
+        let ringX = -100, ringY = -100;
+        let isCursorVisible = false;
 
-      let mouseX = -100, mouseY = -100;
-      let ringX = -100, ringY = -100;
-      let isVisible = false;
+        window.addEventListener('mousemove', (e) => {
+          curMouseX = e.clientX;
+          curMouseY = e.clientY;
 
-      window.addEventListener('mousemove', (e) => {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
+          dot.style.transform = `translate(${curMouseX}px, ${curMouseY}px) translate(-50%, -50%)`;
 
-        dot.style.transform = `translate(${mouseX}px, ${mouseY}px) translate(-50%, -50%)`;
+          if (!isCursorVisible) {
+            dot.style.opacity = '1';
+            ring.style.opacity = '1';
+            ringX = curMouseX;
+            ringY = curMouseY;
+            isCursorVisible = true;
+          }
+        });
 
-        if (!isVisible) {
+        // Smooth Elastic Trailing for the Ring
+        function animateCursor() {
+          ringX += (curMouseX - ringX) * 0.2;
+          ringY += (curMouseY - ringY) * 0.2;
+
+          ring.style.transform = `translate(${ringX}px, ${ringY}px) translate(-50%, -50%)`;
+          requestAnimationFrame(animateCursor);
+        }
+        requestAnimationFrame(animateCursor);
+
+        // Interactive Hover Expansions
+        const interactiveElements = document.querySelectorAll(
+          'a, button, input, textarea, .btn, .skill-pill, .social-icon, .stat-card, .floating-badge, .nav-logo, .cert-card, .contact-info-card, .empty-projects-card, .nav-toggle-label'
+        );
+
+        interactiveElements.forEach((el) => {
+          el.addEventListener('mouseenter', () => {
+            ring.classList.add('cursor-hover');
+            dot.classList.add('cursor-hover');
+          });
+          el.addEventListener('mouseleave', () => {
+            ring.classList.remove('cursor-hover');
+            dot.classList.remove('cursor-hover');
+          });
+        });
+
+        // Click Shockwave Burst
+        window.addEventListener('mousedown', () => {
+          ring.classList.add('cursor-click');
+        });
+        window.addEventListener('mouseup', () => {
+          ring.classList.remove('cursor-click');
+        });
+
+        // Hide cursor when leaving browser window
+        document.addEventListener('mouseleave', () => {
+          dot.style.opacity = '0';
+          ring.style.opacity = '0';
+          isCursorVisible = false;
+        });
+        document.addEventListener('mouseenter', () => {
           dot.style.opacity = '1';
           ring.style.opacity = '1';
-          ringX = mouseX;
-          ringY = mouseY;
-          isVisible = true;
-        }
-      });
-
-      // Smooth Elastic Trailing for the Ring
-      function animateCursor() {
-        ringX += (mouseX - ringX) * 0.2;
-        ringY += (mouseY - ringY) * 0.2;
-
-        ring.style.transform = `translate(${ringX}px, ${ringY}px) translate(-50%, -50%)`;
-        requestAnimationFrame(animateCursor);
+          isCursorVisible = true;
+        });
       }
-      requestAnimationFrame(animateCursor);
-
-      // Interactive Hover Expansions
-      const interactiveElements = document.querySelectorAll(
-        'a, button, input, textarea, .btn, .skill-pill, .social-icon, .stat-card, .floating-badge, .nav-logo, .cert-card, .contact-info-card, .empty-projects-card, .nav-toggle-label'
-      );
-
-      interactiveElements.forEach((el) => {
-        el.addEventListener('mouseenter', () => {
-          ring.classList.add('cursor-hover');
-          dot.classList.add('cursor-hover');
-        });
-        el.addEventListener('mouseleave', () => {
-          ring.classList.remove('cursor-hover');
-          dot.classList.remove('cursor-hover');
-        });
-      });
-
-      // Click Shockwave Burst
-      window.addEventListener('mousedown', () => {
-        ring.classList.add('cursor-click');
-      });
-      window.addEventListener('mouseup', () => {
-        ring.classList.remove('cursor-click');
-      });
-
-      // Hide cursor when leaving browser window
-      document.addEventListener('mouseleave', () => {
-        dot.style.opacity = '0';
-        ring.style.opacity = '0';
-        isVisible = false;
-      });
-      document.addEventListener('mouseenter', () => {
-        dot.style.opacity = '1';
-        ring.style.opacity = '1';
-        isVisible = true;
-      });
     })();
   </script>
 
