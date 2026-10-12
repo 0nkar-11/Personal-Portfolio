@@ -21,8 +21,9 @@ Personal portfolio/
 ## 🚀 How to Open and View Your Website
 
 ### Option 1: Direct Browser View (Easiest)
-1. Go to your folder: `/home/astra/Documents/Web Dev/Personal portfolio/`
-2. Double-click **`index.html`** (or right-click and open in Google Chrome / Brave / Firefox).
+1. Go to your folder: `/home/username
+2. /Documents/Web Dev/Personal portfolio/`
+3. Double-click **`index.html`** (or right-click and open in Google Chrome / Brave / Firefox).
 
 ### Option 2: Live Local Server via Terminal
 In your terminal, navigate to this directory and run:
